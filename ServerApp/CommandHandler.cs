@@ -4,6 +4,7 @@ class CommandHandler
     private SystemState _state;
     private Logger _logger;
     private string? _loggedInUser = null;
+    private string _role = "user";
 
     public CommandHandler(SystemState state, Logger logger)
     {
@@ -24,14 +25,20 @@ class CommandHandler
         switch (command)
         {
             case "HELP":
-                return "Commands: HELP, LOGIN <use> <pass>, STATUS, LOGOUT, LOGS, " +
+                string help = "Commands: HELP, LOGIN <user> <pass>, STATUS, LOGOUT, LOGS, " +
                     "BALANCE, DEPOSIT <amount>, WITHDRAW <amount>, TRANSFER <user> <amount>";
+                if (_role == "admin")
+                    help += ", ADDUSER <user> <pass>, DELETEUSER <user>, EDITUSER <user> <field> <value>, LISTUSERS";
+                return help;
+
+
             case "LOGIN":
                 if (parts.Length < 3) return "Usage: LOGIN <user> <pass>";
                 if (_loggedInUser != null) return "Already logged in.";
                 if (_state.ValidateUser(parts[1], parts[2]))
                 {
                     _loggedInUser = parts[1];
+                    _role = _state.GetRole(_loggedInUser);
                     _logger.Log(_loggedInUser, "LOGIN");
                     return "Login successful.";
                 }
@@ -53,6 +60,7 @@ class CommandHandler
             case "LOGOUT":
                 _logger.Log(_loggedInUser, "LOGOUT");
                 _loggedInUser = null;
+                _role = "user";
                 return "Logged out.";
 
             case "BALANCE":
@@ -86,6 +94,28 @@ class CommandHandler
 
             case "LOGS":
                 return _logger.GetLogs(_loggedInUser);
+
+            case "ADDUSER":
+                if (_role != "admin") return "Access denied.";
+                if (parts.Length < 3) return "Usage: ADDUSER <user> <pass>";
+                return _state.AddUser(parts[1], parts[2]) ? "User added." : "User already exists.";
+
+            case "DELETEUSER":
+                if (_role != "admin") return "Access denied.";
+                if (parts.Length < 2) return "Usage: DELETUSER <user>";
+                if (parts[1] == _loggedInUser) return "Cannot delete self.";
+                return _state.DeleteUser(parts[1]) ? "User deleted." : "User does not exist.";
+
+            case "EDITUSER":
+                if (_role != "admin") return "Access denied.";
+                if (parts.Length < 4) return "Usage: EDITUSER <user> <field> <value>"; 
+                string? newPass = parts[2] == "pass" ? parts[3] : null;
+                string? newName = parts[2] == "name" ? parts[3] : null;
+                return _state.EditUser(parts[1], newPass, newName) ? "User edited." : "User does not exist.";
+
+            case "LISTUSERS":
+                if (_role != "admin") return "Access denied.";
+                return _state.ListUsers();
 
             default:
                 return "Unknown command. Type HELP for a list of commands.";

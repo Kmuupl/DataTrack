@@ -27,7 +27,7 @@ public class Client
         while (true)
         {
             Console.Write("> ");
-            string line = Console.ReadLine();
+            string? line = Console.ReadLine();
 
             if (line == null || line.Equals("quit", StringComparison.OrdinalIgnoreCase))
             {
