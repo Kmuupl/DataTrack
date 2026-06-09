@@ -5,6 +5,10 @@
 
 ServerApp/users.json
 ServerApp/logs.txt
+ServerApp/bin/
+ServerApp/obj/
+ClientApp/bin/
+ClientApp/obj/
 
 # User-specific files
 *.rsuser
