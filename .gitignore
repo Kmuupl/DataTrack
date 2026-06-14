@@ -9,6 +9,10 @@ ServerApp/bin/
 ServerApp/obj/
 ClientApp/bin/
 ClientApp/obj/
+TestApp/bin/
+TestApp/obj/
+ServerApp/Player.cs
+
 
 # User-specific files
 *.rsuser

@@ -22,13 +22,12 @@ class Logger
         lock (_lock)
         {
             if (!File.Exists(LogFile))
-            {
                 return "No logs available.";
-            }
-            var lines = File.ReadAllLines(LogFile);
-            var userLogs = Array.FindAll(lines, line => line.Contains(username + ":"));
 
-            return userLogs.Length > 0 ? string.Join(Environment.NewLine, userLogs) : "No logs for user.";
+            var lines = File.ReadAllLines(LogFile);
+            var userLogs = Array.FindAll(lines, line => line.Contains("] " + username + ":")); // фикс
+
+            return userLogs.Length > 0 ? string.Join("\n", userLogs) : "No logs for user.";
         }
     }
 }
