@@ -28,7 +28,7 @@ class CommandHandler
                 string help = "Commands: HELP, LOGIN <user> <pass>, STATUS, LOGOUT, LOGS, " +
                     "BALANCE, DEPOSIT <amount>, WITHDRAW <amount>, TRANSFER <user> <amount>";
                 if (_role == "admin")
-                    help += ", ADDUSER <user> <pass>, DELETEUSER <user>, EDITUSER <user> <field> <value>, LISTUSERS";
+                    help += ", ADDUSER <user> <pass> <firstname> <lastname>, DELETEUSER <user>, EDITUSER <user> <field> <value>, LISTUSERS";
                 return help;
 
 
@@ -97,22 +97,28 @@ class CommandHandler
 
             case "ADDUSER":
                 if (_role != "admin") return "Access denied.";
-                if (parts.Length < 3) return "Usage: ADDUSER <user> <pass>";
-                return _state.AddUser(parts[1], parts[2]) ? "User added." : "User already exists.";
+                if (parts.Length < 5) return "Usage: ADDUSER <user> <pass> <firstname> <lastname>";
+                return _state.AddUser(parts[1], parts[2], parts[3], parts[4]) ? "User added." : "User already exists.";
 
             case "DELETEUSER":
                 if (_role != "admin") return "Access denied.";
-                if (parts.Length < 2) return "Usage: DELETUSER <user>";
+                if (parts.Length < 2) return "Usage: DELETEUSER <user>"; // фикс опечатки
                 if (parts[1] == _loggedInUser) return "Cannot delete self.";
                 return _state.DeleteUser(parts[1]) ? "User deleted." : "User does not exist.";
-
             case "EDITUSER":
                 if (_role != "admin") return "Access denied.";
-                if (parts.Length < 4) return "Usage: EDITUSER <user> <field> <value>"; 
+                if (parts.Length < 4) return "Usage: EDITUSER <user> <field> <value>";
                 string? newPass = parts[2] == "pass" ? parts[3] : null;
-                string? newName = parts[2] == "name" ? parts[3] : null;
-                return _state.EditUser(parts[1], newPass, newName) ? "User edited." : "User does not exist.";
-
+                string? newName2 = parts[2] == "name" ? parts[3] : null;
+                string result = _state.EditUser(parts[1], newPass, newName2);
+                return result switch
+                {
+                    "ok" => "User edited.",
+                    "not_found" => "User does not exist.",
+                    "name_conflict" => "Username already exists.",
+                    "invalid_name" => "Invalid username.",
+                    _ => "Unknown error."
+                };
             case "LISTUSERS":
                 if (_role != "admin") return "Access denied.";
                 return _state.ListUsers();
