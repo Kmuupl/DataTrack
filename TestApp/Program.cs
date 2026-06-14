@@ -30,7 +30,7 @@ var client3Commands = new List<(string, int)>
 {
     ("LOGIN admin 1234",    rnd.Next(100, 500)),
     ("LISTUSERS",           rnd.Next(100, 500)),
-    ("ADDUSER testuser abc",rnd.Next(100, 500)),
+    ("ADDUSER testuser abc Test User", rnd.Next(100, 500)),
     ("LISTUSERS",           rnd.Next(100, 500)),
     ("DELETEUSER testuser", rnd.Next(100, 500)),
     ("LISTUSERS",           rnd.Next(100, 500)),

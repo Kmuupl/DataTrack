@@ -5,21 +5,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Runtime.InteropServices.Marshalling;
 
-class User
-{
-    public string Username { get; set; }
-    public string Password { get; set; }
-    public decimal Balance { get; set; }
-    public string Role { get; set; }
-
-    public User(string username, string password, decimal balance, string role = "user")
-    {
-        Username = username;
-        Password = password;
-        Balance = balance;
-        Role = role;
-    }
-}
 
 class SystemState
 {
@@ -36,16 +21,23 @@ class SystemState
     {
         if (!File.Exists(FilePath))
         {
-            return new Dictionary<string, User>
+            var defaults = new Dictionary<string, User>
             {
-                { "admin", new User("admin", PasswordHelper.HashPassword("1234"), 1000m, "admin") },
-                { "user", new User("user", PasswordHelper.HashPassword("pass"), 500m, "user") }
+                { "admin", new User("admin", PasswordHelper.HashPassword("1234"), 1000m, "admin", "System", "Administrator") },
+                { "user", new User("user", PasswordHelper.HashPassword("pass"), 500m, "user", "Default", "User") }
             };
+
+            _users = defaults;
+            SaveToFile();
+            return defaults;
         }
+
 
         string json = File.ReadAllText(FilePath);
         return JsonSerializer.Deserialize<Dictionary<string, User>>(json) ?? new Dictionary<string, User>();
     }
+
+
 
     private void SaveToFile()
     {
@@ -95,7 +87,7 @@ class SystemState
     {
         lock (_lock)
         {
-            return _users.ContainsKey(username);
+            return _users.TryGetValue(username, out var u) && u.Role != "deleted";
         }
     }
 
@@ -122,12 +114,12 @@ class SystemState
         }
     }
 
-    public bool AddUser(string username, string password, decimal balance = 0m)
+    public bool AddUser(string username, string password, string firstName, string lastName, decimal balance = 0m)
     {
         lock (_lock)
         {
             if (_users.ContainsKey(username)) return false;
-            _users[username] = new User(username, PasswordHelper.HashPassword(password), balance);
+            _users[username] = new User(username, PasswordHelper.HashPassword(password), balance, "user", firstName, lastName);
             SaveToFile();
             return true;
         }
@@ -144,20 +136,22 @@ class SystemState
         }
     }
 
-    public bool EditUser(string username, string? newPassword, string? newName)
+    public string EditUser(string username, string? newPassword, string? newName)
     {
         lock (_lock)
         {
-            if (!_users.TryGetValue(username, out var u)) return false;
+            if (!_users.TryGetValue(username, out var u)) return "not_found";
             if (newPassword != null) u.Password = PasswordHelper.HashPassword(newPassword);
             if (newName != null)
             {
+                if (string.IsNullOrWhiteSpace(newName)) return "invalid_name";
+                if (_users.ContainsKey(newName)) return "name_conflict";
                 _users.Remove(username);
                 u.Username = newName;
                 _users[newName] = u;
             }
             SaveToFile();
-            return true;
+            return "ok";
         }
     }
 
@@ -169,9 +163,9 @@ class SystemState
             foreach (var u in _users.Values)
             {
                 if (u.Role == "deleted")
-                    sb.AppendLine($"[DELETED] {u.Username} | balance: {u.Balance}");
+                    sb.AppendLine($"[DELETED] {u.Username} | {u.FirstName} {u.LastName} | balance: {u.Balance}");
                 else
-                    sb.AppendLine($"{u.Username} | role: {u.Role} | balance: {u.Balance}");
+                    sb.AppendLine($"{u.Username} | {u.FirstName} {u.LastName} | role: {u.Role} | balance: {u.Balance}");
             }
             return sb.ToString().TrimEnd();
         }
